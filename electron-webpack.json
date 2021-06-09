@@ -1,0 +1,13 @@
+{
+    "title": "My React App",
+    "main": {
+        "extraEntries": [
+            "@/preload.js"
+        ],
+        "sourceDirectory": "app/main"
+    },
+    "renderer": {
+        "sourceDirectory": "app/renderer",
+        "template": "app/renderer/index.html"
+    }
+}

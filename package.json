@@ -1,0 +1,21 @@
+{
+    "name": "aafx",
+    "version": "1.0.0",
+    "description": "Saga sandbox",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "electron-webpack dev",
+        "help": "electron-webpack --help"
+    },
+    "dependencies": {
+        "@electron-forge/cli": "^6.0.0-beta.54",
+        "electron": "^12.0.7",
+        "redux": "^4.1.0",
+        "redux-saga": "^1.1.3"
+    },
+    "devDependencies": {
+        "electron-webpack": "^2.8.2",
+        "webpack": "^4.42.1"
+    }
+}
