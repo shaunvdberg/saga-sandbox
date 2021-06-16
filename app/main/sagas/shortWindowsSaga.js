@@ -1,14 +1,14 @@
-import { BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { takeEvery, take, put, call, cancelled, fork, cancel, delay, all, select, actionChannel, spawn, join } from 'redux-saga/effects';
 import { eventChannel, END, channel, buffers } from 'redux-saga';
 import { actions } from '../actions';
 import path from 'path';
 
-export const windowEvents = {
-    LOADED: 'did-finish-load',
-    CLOSE: 'close',
-    CLOSED: 'closed',
-};
+export const windowEventActions = {
+    LOADED: 'LOADED',
+    CLOSE: 'CLOSE',
+    CLOSED: 'CLOSED'
+  };
 
 const windows = new Map();
 
@@ -16,29 +16,29 @@ const createWindowEventsChannel = (window) => {
     return new eventChannel(emit => {
         const onLoaded = () => {
             emit({
-                type: windowEvents.LOADED,
+                type: windowEventActions.LOADED,
                 sender: window
             });
         };
 
-        const onClose = async (e) => {
+        const onClose = async () => {
             emit({
-                type: windowEvents.CLOSE,
+                type: windowEventActions.CLOSE,
                 sender: window
             });
         };
 
         const onClosed = () => {
             emit({
-                type: windowEvents.CLOSED,
+                type: windowEventActions.CLOSED,
                 sender: window
             });
             emit(END);
         };
 
-        window.webContents.on(windowEvents.LOADED, onLoaded);
-        window.on(windowEvents.CLOSE, onClose);
-        window.on(windowEvents.CLOSED, onClosed);
+        window.webContents.on('did-finish-load', onLoaded);
+        window.once('close', onClose);
+        window.once('closed', onClosed);
 
         return () => {
             console.log('createWindowEventsChannel unsubscribed.');
@@ -59,7 +59,7 @@ function* getNextWindowId() {
     return ++nextId;
 }
 
-function* watchWindowEvents(window, handlers) {
+function* watchWindowEvents(window) {
     try {
         let eventChannel = yield call(createWindowEventsChannel, window);
 
@@ -69,25 +69,24 @@ function* watchWindowEvents(window, handlers) {
             console.log(event);
 
             yield put({
-                type: actions.WINDOW_EVENT,
-                event: {
-                    type: event.type,
-                    sender: event.sender
-                }
+                type: event.type,
+                sender: event.sender
             });
 
-            if (event.type === 'did-finish-load') {
-                yield call(handlers.initHandler, window);
-            }    
+            // if (event.type === 'did-finish-load') {
+            //     yield call(handlers.initHandler, window);
+            // }    
 
-            if (event.type === 'close') {
-                yield call(handlers.closingHandler, window);
-            }
+            // if (event.type === 'close') {
+            //     yield call(handlers.closingHandler, window);
+            // }
 
-            if (event.type === 'closed') {
-                yield call(handlers.closedHandler, window);
-            }
+            // if (event.type === 'closed') {
+            //     yield call(handlers.closedHandler, window);
+            // }
         }
+    } catch(e) {
+        console.log(e);
     } finally {
         console.log('watchWindowEvents process finished.');
     }
@@ -146,8 +145,28 @@ export function* showWindowSaga(options, handlers) {
     }
 }
 
+function loadWindowSaga() {
+    const mainWindow = new BrowserWindow({
+        webPreferences: {
+            enableRemoteModule: true,
+            nodeIntegration: true,
+          contextIsolation: false
+        }
+    });
+
+    mainWindow.loadURL(`http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
+    mainWindow.webContents.openDevTools();
+    mainWindow.on('close', () => {
+        app.quit();
+    });
+    mainWindow.on('closed', () => {
+        throw new Error('Something went wrong.');
+    })
+}
+
 export function* windowSaga() {
     yield all([
+        takeEvery(actions.LOAD_WINDOW, loadWindowSaga)
         // takeEvery(actions.SHOW_WINDOW, runner),
         // watchAllWindowEvents(),
         // takeEvery(actions.SUBSCRIBE_TOKE_REFRESH, watchTokenRefresh)

@@ -31,7 +31,7 @@ const {
 console.log('register-preload');
 
 window.addEventListener('unload', function(event) {
-    
+    this.alert('unloads');
 });
 
 // function register() {
@@ -50,7 +50,7 @@ window.addEventListener('unload', function(event) {
 
 // setTimeout(register, 5000);
 
-
+let token = 100;
 
 contextBridge.exposeInMainWorld(
     "api", {
@@ -59,10 +59,7 @@ contextBridge.exposeInMainWorld(
         },
         onTokenRefresh: (callback) => {
             ipcRenderer.on("token-refresh", (event, ...args) => {
-                console.log(event);
-                console.log(args);
-
-                callback(args); 
+                callback(++token); 
             });
         }
     }

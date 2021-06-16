@@ -1,6 +1,6 @@
 import { takeEvery, take, put, call, cancelled, fork, cancel, delay, all, select, actionChannel, spawn, join } from 'redux-saga/effects';
 import { actions } from '../actions';
-import { showWindowSaga, windowEvents } from './shortWindowsSaga';
+import { showWindowSaga, windowEventActions } from './shortWindowsSaga';
 
 function* initHandler(window) {
     // yield put({
@@ -24,17 +24,15 @@ function* closedHandler(window) {
 }
 
 function* newIntegrationSaga() {
-    const options = {
-        url: 'http://localhost:8080/fmconnect/electronIndex.html'
-    };
+    try {
+        const options = {
+            url: 'http://localhost:8080/fmconnect/index.html'
+        };
 
-    const handlers = {
-        initHandler,
-        closingHandler,
-        closedHandler
-    };
-
-    yield call(showWindowSaga, options, handlers);
+        yield call(showWindowSaga, options);
+    } catch(e) {
+        console.log(e);
+    }
 }
 
 function* setAuthToken(window) {
@@ -72,20 +70,23 @@ function* watchTokenRefresh(window) {
 
 function* takeEveryWindowEvent(handler) {
     yield fork(function* () {
-        let eventChannel = yield actionChannel(actions.WINDOW_EVENT);
+        let eventChannel = yield actionChannel(Object.values(windowEventActions));
         let windowTasks = new Map();
 
         while (true) {
-            let { event } = yield take(eventChannel);
-            let { type, sender } = event;
+            let { type, sender } = yield take(eventChannel);
 
-            if (type === windowEvents.LOADED) {
-                windowTasks.set(sender.windowId, yield fork(watchTokenRefresh, sender));
+            if (type === windowEventActions.LOADED) {
+                if (!windowTasks.has(sender.windowId)) {
+                    windowTasks.set(sender.windowId, yield fork(watchTokenRefresh, sender));
+                }
             }
 
-            if (type === windowEvents.CLOSED) {
-                windowTasks.get(sender.windowId).cancel();
-                windowTasks.delete(sender.windowId);
+            if (type === windowEventActions.CLOSED) {
+                if (windowTasks.has(sender.windowId)) {
+                    windowTasks.get(sender.windowId).cancel();
+                    windowTasks.delete(sender.windowId);
+                }
             }
         }
     });

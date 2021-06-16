@@ -10,7 +10,8 @@
     },
     "dependencies": {
         "@electron-forge/cli": "^6.0.0-beta.54",
-        "electron": "^12.0.7",
+        "chromium-net-errors": "^13.0.0",
+        "electron": "^9.4.4",
         "redux": "^4.1.0",
         "redux-saga": "^1.1.3"
     },
